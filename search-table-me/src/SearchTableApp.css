@@ -1,0 +1,96 @@
+.App {
+  text-align: center;
+}
+
+h4 {
+  font-size: 30px;
+  color: green;
+  margin-bottom: 5px;
+  justify-content: center;
+}
+
+.counter {
+  margin-bottom: 50px;
+  justify-content: center;
+}
+
+.data-table {
+  text-align: left;
+  margin-top: 10px;
+  margin-bottom: 50px;
+  border:3px solid white;
+  width: 40%;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 20px;
+  height: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-family: sans-serif;
+  min-width: 400px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.data-table thead tr {
+  background-color: lightgray;
+  color: #ffffff;
+  text-align: left;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid #dddddd;
+}
+
+.data-table tbody tr:nth-of-type(even) {
+  background-color: #f3f3f3;
+}
+
+.data-table tbody tr.active-row {
+  font-weight: bold;
+  color: #009879;
+}
+
+.data-row {
+  border:5px solid black;
+}
+
+button {
+  margin-top: 10px;
+  margin-left: 10px;
+}
+
+[class^="header-"] {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+td {
+  border: 1px solid black;
+  text-align: left;
+  padding: 10px;
+}
+
+button {
+  margin-right: 30px;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 10vh;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
