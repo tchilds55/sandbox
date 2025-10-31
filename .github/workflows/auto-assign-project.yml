@@ -8,7 +8,7 @@ jobs:
   assign-to-project:
     runs-on: ubuntu-latest
     steps:
-      - name: Add issue to Project `Analytics Experience` and label it
+      - name: Add issue to Project and label it
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -34,15 +34,14 @@ jobs:
               console.error('Failed to add label:', error.message);
             }
             
-            // Step 2: Find "Project `Analytics Experience`" 
-            // Note: Replace with your actual project owner (org or user)
-            const projectOwner = 'tchilds55';  // Change if project is owned by different org
-            const projectNumber = 3;  // Change to your project number (from URL)
+            // Step 2: Find your user project
+            const projectOwner = 'tchilds55';  // Your username
+            const projectNumber = 3;           // Your project number
             
-            // Get project ID using GraphQL
+            // Get project ID using GraphQL (user project, not org)
             const projectQuery = `
               query($owner: String!, $number: Int!) {
-                organization(login: $owner) {
+                user(login: $owner) {
                   projectV2(number: $number) {
                     id
                     title
@@ -52,44 +51,20 @@ jobs:
             `;
             
             let projectId;
+            let projectTitle;
+            
             try {
               const projectResult = await github.graphql(projectQuery, {
                 owner: projectOwner,
                 number: projectNumber
               });
               
-              projectId = projectResult.organization.projectV2.id;
-              const projectTitle = projectResult.organization.projectV2.title;
-              console.log(`Found project: ${projectTitle} (${projectId})`);
+              projectId = projectResult.user.projectV2.id;
+              projectTitle = projectResult.user.projectV2.title;
+              console.log(`Found project: ${projectTitle} (ID: ${projectId})`);
             } catch (error) {
               console.error('Failed to find project:', error.message);
-              console.log('Trying user-owned project instead...');
-              
-              // Try as user-owned project instead of org
-              const userProjectQuery = `
-                query($owner: String!, $number: Int!) {
-                  user(login: $owner) {
-                    projectV2(number: $number) {
-                      id
-                      title
-                    }
-                  }
-                }
-              `;
-              
-              try {
-                const projectResult = await github.graphql(userProjectQuery, {
-                  owner: projectOwner,
-                  number: projectNumber
-                });
-                
-                projectId = projectResult.user.projectV2.id;
-                const projectTitle = projectResult.user.projectV2.title;
-                console.log(`Found user project: ${projectTitle} (${projectId})`);
-              } catch (userError) {
-                console.error('Failed to find user project:', userError.message);
-                throw new Error('Could not find project. Check project number and owner.');
-              }
+              throw new Error(`Could not find project. Error: ${error.message}`);
             }
             
             // Step 3: Add issue to project
@@ -108,7 +83,7 @@ jobs:
                 projectId: projectId,
                 contentId: issueNodeId
               });
-              console.log('✓ Added issue to project');
+              console.log(`✓ Added issue #${issueNumber} to project "${projectTitle}"`);
             } catch (error) {
               console.error('Failed to add to project:', error.message);
               throw error;
