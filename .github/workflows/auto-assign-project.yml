@@ -36,7 +36,7 @@ jobs:
             
             // Step 2: Find "Project `Analytics Experience`" 
             // Note: Replace with your actual project owner (org or user)
-            const projectOwner = owner;  // Change if project is owned by different org
+            const projectOwner = tchilds55;  // Change if project is owned by different org
             const projectNumber = 3;  // Change to your project number (from URL)
             
             // Get project ID using GraphQL
