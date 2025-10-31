@@ -34,15 +34,16 @@ jobs:
               console.error('Failed to add label:', error.message);
             }
             
-            // Step 2: Find your user project
-            const projectOwner = 'tchilds55';  // Your username
-            const projectNumber = 3;           // Your project number
+            // Step 2: Get YOUR projects using viewer (not user lookup)
+            const projectNumber = 3;
             
-            // Get project ID using GraphQL (user project, not org)
+            console.log(`Looking for project number ${projectNumber}...`);
+            
+            // Use viewer instead of user(login:)
             const projectQuery = `
-              query($owner: String!, $number: Int!) {
-                user(login: $owner) {
-                  projectV2(number: $number) {
+              query {
+                viewer {
+                  projectV2(number: ${projectNumber}) {
                     id
                     title
                   }
@@ -54,17 +55,18 @@ jobs:
             let projectTitle;
             
             try {
-              const projectResult = await github.graphql(projectQuery, {
-                owner: projectOwner,
-                number: projectNumber
-              });
+              const projectResult = await github.graphql(projectQuery);
               
-              projectId = projectResult.user.projectV2.id;
-              projectTitle = projectResult.user.projectV2.title;
-              console.log(`Found project: ${projectTitle} (ID: ${projectId})`);
+              if (!projectResult.viewer.projectV2) {
+                throw new Error(`Project #${projectNumber} not found`);
+              }
+              
+              projectId = projectResult.viewer.projectV2.id;
+              projectTitle = projectResult.viewer.projectV2.title;
+              console.log(`✓ Found project: "${projectTitle}" (ID: ${projectId})`);
             } catch (error) {
               console.error('Failed to find project:', error.message);
-              throw new Error(`Could not find project. Error: ${error.message}`);
+              throw error;
             }
             
             // Step 3: Add issue to project
