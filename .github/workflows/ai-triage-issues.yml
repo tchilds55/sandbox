@@ -20,8 +20,8 @@ jobs:
             
             console.log(`🤖 Analyzing issue #${issueNumber}: ${issueTitle}`);
             
-            // Step 1: Call Claude API to analyze the issue
             const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+            const CLAUDE_BASE_URL = process.env.CLAUDE_BASE_URL;
             
             if (!CLAUDE_API_KEY) {
               console.error('❌ CLAUDE_API_KEY not set');
@@ -30,35 +30,36 @@ jobs:
             
             const prompt = `You are a triage assistant for the Shopify Analytics team.
 
-Our team maintains:
-- Analytics Frontend (reports, live view, dashboards)
-- ShopifyQL query engine/parser/language server
-- Reportify API or MAAPI used to query our database
-- Data visualization components in PolarisViz
+            Our team maintains:
+            - Analytics Frontend (reports, live view, dashboards)
+            - ShopifyQL query engine/parser/language server
+            - Reportify API or MAAPI used to query our database
+            - Data visualization components in PolarisViz
 
-Common issue types:
-- DatePicker bugs (often timezone-related)
-- Query performance issues
-- Cross-surface breaking changes (Dashboard, Reports, Live surfaces)
-- UI rendering bugs
-- Reportify API errors
+            Common issue types:
+            - DatePicker bugs (often timezone-related)
+            - Query performance issues
+            - Cross-surface breaking changes (Dashboard, Reports, Live surfaces)
+            - UI rendering bugs
+            - Reportify API errors
 
-Analyze this issue:
+            Analyze this issue:
 
-Title: ${issueTitle}
-Body: ${issueBody}
+            Title: ${issueTitle}
+            Body: ${issueBody}
 
-Based on the content, suggest:
-1. Appropriate labels (choose from: analytics backlog, extensiblity backlog)
-2. Which project to assign it to (choose from: Analytics Experience, Extensibility, Untriaged)
+            Based on the content, suggest:
+            1. Appropriate labels (choose from: analytics backlog, extensiblity backlog)
+            2. Which project to assign it to (choose from: Analytics Experience, Extensibility, Untriaged). Use Analytics Experience for any frontend related issues and Extensibility for anything related to ShopifyQL language or Reportify API. Use Untriaged for anything that's unclear.
+            3. Priority (low, medium, high)
 
-Respond in JSON format:
-{
-  "labels": ["label1", "label2"],
-  "project": "project name",
-  "priority": "medium",
-  "reasoning": "brief explanation"
-}`;
+            Respond in JSON format:
+            {
+              "labels": ["label1", "label2"],
+              "project": "project name",
+              "priority": "medium",
+              "reasoning": "brief explanation"
+            }`;
 
             let analysis;
             
@@ -67,7 +68,7 @@ Respond in JSON format:
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${CLAUDE_API_KEY}`, 
+                  'Authorization': `Bearer ${CLAUDE_API_KEY}`,
                   'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
@@ -81,7 +82,8 @@ Respond in JSON format:
               });
               
               if (!response.ok) {
-                throw new Error(`Claude API error: ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`Claude API error: ${response.status} - ${errorText}`);
               }
               
               const data = await response.json();
@@ -89,7 +91,6 @@ Respond in JSON format:
               
               console.log('📊 Claude response:', content);
               
-              // Parse JSON response
               const jsonMatch = content.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
                 analysis = JSON.parse(jsonMatch[0]);
@@ -99,7 +100,6 @@ Respond in JSON format:
               
             } catch (error) {
               console.error('❌ Failed to get Claude analysis:', error.message);
-              // Fallback: use default labels
               analysis = {
                 labels: ['needs-triage'],
                 project: 'Analytics Experience',
@@ -131,7 +131,8 @@ Respond in JSON format:
             // Step 3: Add to project
             const projectMap = {
               'Analytics Experience': 3,
-              'Extensibility': 4
+              'Extensibility': 4,
+              'Untriaged': 3
             };
             
             const projectNumber = projectMap[analysis.project] || 3;
@@ -180,13 +181,13 @@ Respond in JSON format:
                 issue_number: issueNumber,
                 body: `🤖 **AI Triage Results**
 
-**Labels assigned:** ${analysis.labels.join(', ')}
-**Project:** ${analysis.project}
-**Priority:** ${analysis.priority}
+            **Labels assigned:** ${analysis.labels.join(', ')}
+            **Project:** ${analysis.project}
+            **Priority:** ${analysis.priority}
 
-**Reasoning:** ${analysis.reasoning}
+            **Reasoning:** ${analysis.reasoning}
 
-_This issue was automatically triaged by Claude AI. Please review and adjust if needed._`
+            _This issue was automatically triaged by Claude AI. Please review and adjust if needed._`
               });
               console.log('✅ Added triage comment');
             } catch (error) {
@@ -196,4 +197,4 @@ _This issue was automatically triaged by Claude AI. Please review and adjust if 
             console.log('✅ AI triage complete!');
         env:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-          CLAUDE_BASE_URL: https://proxy.shopify.ai/vendors/anthropic/v1
+          CLAUDE_BASE_URL: ${{ secrets.CLAUDE_BASE_URL }}
