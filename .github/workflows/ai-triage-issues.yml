@@ -50,8 +50,7 @@ Body: ${issueBody}
 
 Based on the content, suggest:
 1. Appropriate labels (choose from: analytics backlog, extensiblity backlog)
-2. Which project to assign it to (choose from: Analytics Experience, Extensibility, Untriaged).  Use Analytics Experience for any frontend related issues and Extensibility for anything related to ShopifyQL language or Reportify API. Use Untriaged for anything that's unclear.
-3. Priority (low, medium, high)
+2. Which project to assign it to (choose from: Analytics Experience, Extensibility, Untriaged)
 
 Respond in JSON format:
 {
