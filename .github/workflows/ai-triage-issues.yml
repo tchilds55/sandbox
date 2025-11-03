@@ -47,10 +47,6 @@ Analyze this issue:
 
 Title: ${issueTitle}
 Body: ${issueBody}
-Title: ${issueTitle}
-
-Body:
-${issueBody}
 
 Based on the content, suggest:
 1. Appropriate labels (choose from: analytics backlog, extensiblity backlog)
