@@ -1,0 +1,204 @@
+name: AI-Powered Issue Triage
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  ai-triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Analyze issue with Claude and assign
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            const issueNumber = issue.number;
+            const issueTitle = issue.title;
+            const issueBody = issue.body || '';
+            
+            console.log(`🤖 Analyzing issue #${issueNumber}: ${issueTitle}`);
+            
+            // Step 1: Call Claude API to analyze the issue
+            const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+            
+            if (!CLAUDE_API_KEY) {
+              console.error('❌ CLAUDE_API_KEY not set');
+              return;
+            }
+            
+            const prompt = `You are a triage assistant for the Shopify Analytics team.
+
+Our team maintains:
+- Analytics Frontend (reports, live view, dashboards)
+- ShopifyQL query engine/parser/language server
+- Reportify API or MAAPI used to query our database
+- Data visualization components in PolarisViz
+
+Common issue types:
+- DatePicker bugs (often timezone-related)
+- Query performance issues
+- Cross-surface breaking changes (Dashboard, Reports, Live surfaces)
+- UI rendering bugs
+- Reportify API errors
+
+Analyze this issue:
+
+Title: ${issueTitle}
+Body: ${issueBody}
+Title: ${issueTitle}
+
+Body:
+${issueBody}
+
+Based on the content, suggest:
+1. Appropriate labels (choose from: analytics backlog, extensiblity backlog)
+2. Which project to assign it to (choose from: Analytics Experience, Extensibility, Untriaged).  Use Analytics Experience for any frontend related issues and Extensibility for anything related to ShopifyQL language or Reportify API. Use Untriaged for anything that's unclear.
+3. Priority (low, medium, high)
+
+Respond in JSON format:
+{
+  "labels": ["label1", "label2"],
+  "project": "project name",
+  "priority": "medium",
+  "reasoning": "brief explanation"
+}`;
+
+            let analysis;
+            
+            try {
+              const response = await fetch('${CLAUDE_BASE_URL}/messages', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${CLAUDE_API_KEY}`, 
+                  'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                  model: 'claude-3-5-sonnet-20241022',
+                  max_tokens: 1024,
+                  messages: [{
+                    role: 'user',
+                    content: prompt
+                  }]
+                })
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Claude API error: ${response.status}`);
+              }
+              
+              const data = await response.json();
+              const content = data.content[0].text;
+              
+              console.log('📊 Claude response:', content);
+              
+              // Parse JSON response
+              const jsonMatch = content.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                analysis = JSON.parse(jsonMatch[0]);
+              } else {
+                throw new Error('Could not parse JSON from Claude response');
+              }
+              
+            } catch (error) {
+              console.error('❌ Failed to get Claude analysis:', error.message);
+              // Fallback: use default labels
+              analysis = {
+                labels: ['needs-triage'],
+                project: 'Analytics Experience',
+                priority: 'medium',
+                reasoning: 'Auto-assigned (Claude API error)'
+              };
+            }
+            
+            console.log('🏷️  Suggested labels:', analysis.labels);
+            console.log('📋 Suggested project:', analysis.project);
+            console.log('⚡ Priority:', analysis.priority);
+            console.log('💡 Reasoning:', analysis.reasoning);
+            
+            // Step 2: Add labels
+            if (analysis.labels && analysis.labels.length > 0) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  labels: analysis.labels
+                });
+                console.log('✅ Labels added:', analysis.labels.join(', '));
+              } catch (error) {
+                console.error('❌ Failed to add labels:', error.message);
+              }
+            }
+            
+            // Step 3: Add to project
+            const projectMap = {
+              'Analytics Experience': 3,
+              'Extensibility': 4
+            };
+            
+            const projectNumber = projectMap[analysis.project] || 3;
+            
+            try {
+              const projectQuery = `
+                query {
+                  viewer {
+                    projectV2(number: ${projectNumber}) {
+                      id
+                      title
+                    }
+                  }
+                }
+              `;
+              
+              const projectResult = await github.graphql(projectQuery);
+              const projectId = projectResult.viewer.projectV2.id;
+              const projectTitle = projectResult.viewer.projectV2.title;
+              
+              const addToProjectMutation = `
+                mutation($projectId: ID!, $contentId: ID!) {
+                  addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+                    item {
+                      id
+                    }
+                  }
+                }
+              `;
+              
+              await github.graphql(addToProjectMutation, {
+                projectId: projectId,
+                contentId: issue.node_id
+              });
+              
+              console.log(`✅ Added to project: ${projectTitle}`);
+            } catch (error) {
+              console.error('❌ Failed to add to project:', error.message);
+            }
+            
+            // Step 4: Add comment explaining the AI triage
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `🤖 **AI Triage Results**
+
+**Labels assigned:** ${analysis.labels.join(', ')}
+**Project:** ${analysis.project}
+**Priority:** ${analysis.priority}
+
+**Reasoning:** ${analysis.reasoning}
+
+_This issue was automatically triaged by Claude AI. Please review and adjust if needed._`
+              });
+              console.log('✅ Added triage comment');
+            } catch (error) {
+              console.error('❌ Failed to add comment:', error.message);
+            }
+            
+            console.log('✅ AI triage complete!');
+        env:
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          CLAUDE_BASE_URL: https://proxy.shopify.ai/vendors/anthropic/v1
