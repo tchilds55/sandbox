@@ -64,7 +64,7 @@ Respond in JSON format:
             let analysis;
             
             try {
-              const response = await fetch('${CLAUDE_BASE_URL}/messages', {
+              const response = await fetch(`${CLAUDE_BASE_URL}/messages`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
