@@ -49,7 +49,7 @@ jobs:
             Body: ${issueBody}
 
             Based on the content, suggest:
-            1. Appropriate labels (choose from: analytics backlog, extensiblity backlog)
+            1. Appropriate labels (choose from: analytics backlog, extensibility backlog)
             2. Which project to assign it to (choose from: Analytics Experience, Extensibility, Untriaged). Use Analytics Experience for any frontend related issues and Extensibility for anything related to ShopifyQL language or Reportify API. Use Untriaged for anything that's unclear.
             3. Priority (low, medium, high)
 
@@ -64,16 +64,17 @@ jobs:
             let analysis;
             
             try {
+              console.log('📡 Calling Claude API...');
+              
               const response = await fetch(`${CLAUDE_BASE_URL}/messages`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  headers: {
-                  'x-api-key': CLAUDE_API_KEY,  // No Bearer prefix
+                  'x-api-key': CLAUDE_API_KEY,  
                   'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
-                  model: 'claude-3-5-sonnet-20241022',
+                  model: 'claude-3-5-sonnet-20241022',  
                   max_tokens: 1024,
                   messages: [{
                     role: 'user',
@@ -82,8 +83,11 @@ jobs:
                 })
               });
               
+              console.log('Response status:', response.status);
+              
               if (!response.ok) {
                 const errorText = await response.text();
+                console.error('Error response:', errorText);
                 throw new Error(`Claude API error: ${response.status} - ${errorText}`);
               }
               
