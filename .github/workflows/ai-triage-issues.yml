@@ -68,7 +68,8 @@ jobs:
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${CLAUDE_API_KEY}`,
+                  headers: {
+                  'x-api-key': CLAUDE_API_KEY,  // No Bearer prefix
                   'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
