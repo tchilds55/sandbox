@@ -91,10 +91,22 @@ jobs:
               }
               
               const data = await response.json();
-              const content = data.content[0].text;
+              
+              // 👇 DEBUG: Log the full response structure
+              console.log('Full API response:', JSON.stringify(data, null, 2));
+              
+              // 👇 FIXED: Validate response structure and use correct path for OpenAI-compatible endpoint
+              if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                console.error('❌ Unexpected response structure:', JSON.stringify(data, null, 2));
+                throw new Error('Invalid response structure from API');
+              }
+              
+              // 👇 FIXED: Use choices[0].message.content for OpenAI-compatible endpoint
+              const content = data.choices[0].message.content;
               
               console.log('📊 Claude response:', content);
               
+              // Parse JSON from response
               const jsonMatch = content.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
                 analysis = JSON.parse(jsonMatch[0]);
@@ -104,6 +116,7 @@ jobs:
               
             } catch (error) {
               console.error('❌ Failed to get Claude analysis:', error.message);
+              console.error('Error stack:', error.stack);
               analysis = {
                 labels: ['needs-triage'],
                 project: 'Analytics Experience',
