@@ -70,11 +70,11 @@ jobs:
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'x-api-key': CLAUDE_API_KEY,  
+                  'Authorization': `Bearer ${CLAUDE_API_KEY}`,  
                   'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
-                  model: 'claude-3-5-sonnet-20241022',  
+                  model: 'claude-sonnet-4',  
                   max_tokens: 1024,
                   messages: [{
                     role: 'user',
