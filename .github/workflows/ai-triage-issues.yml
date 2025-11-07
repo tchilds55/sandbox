@@ -66,15 +66,14 @@ jobs:
             try {
               console.log('📡 Calling Claude API...');
               
-              const response = await fetch(`${CLAUDE_BASE_URL}/messages`, {
+              const response = await fetch(`${CLAUDE_BASE_URL}/chat/completions`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${CLAUDE_API_KEY}`,  
-                  'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
-                  model: 'claude-sonnet-4',  
+                  model: 'anthropic:claude-3-5-sonnet-20241022',  
                   max_tokens: 1024,
                   messages: [{
                     role: 'user',
